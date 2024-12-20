@@ -6,7 +6,8 @@ from langchain_community.utilities import GoogleSerperAPIWrapper
 from langchain_core.output_parsers import JsonOutputParser, StrOutputParser
 from langgraph.graph import END, StateGraph
 from typing_extensions import TypedDict
-from .prompt_library import PromptLibrary, PromptType
+from prompt_library import PromptLibrary, PromptType
+from dotenv import load_dotenv
 
 class GraphState(TypedDict):
     """Represents the state of our workflow graph."""
@@ -19,6 +20,7 @@ class ResearchAssistant:
     """Main class implementing the research assistant functionality."""
     
     def __init__(self):
+        load_dotenv()
         """Initialize the research assistant with necessary components."""
         self.prompt_library = PromptLibrary()
         self.llm, self.llm_json = self._configure_llm()

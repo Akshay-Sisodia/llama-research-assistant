@@ -1,9 +1,10 @@
 # Llama Research Assistant 🦙📚
 
-A powerful research assistant powered by Llama 3.2, LangChain, and LangGraph. This application helps users conduct research by automatically routing queries, performing web searches, and generating comprehensive research reports.
+A powerful research assistant powered by Llama 3.2 (via Ollama), LangChain, and LangGraph. This application helps users conduct research by automatically routing queries, performing web searches, and generating comprehensive research reports.
 
 ## 🌟 Features
 
+- **Llama 3.2 Integration**: Uses Ollama to run Llama 3.2 locally
 - **Intelligent Query Routing**: Automatically determines whether to use direct generation or web search
 - **Advanced Web Search**: Integrates with Google Serper API for up-to-date information
 - **Research Report Generation**: Creates well-structured reports with proper citations
@@ -12,36 +13,55 @@ A powerful research assistant powered by Llama 3.2, LangChain, and LangGraph. Th
 
 ## 🚀 Quick Start
 
-1. Clone the repository:
-```bash
-git clone https://github.com/yourusername/llama-research-assistant.git
-cd llama-research-assistant
-```
+### Prerequisites
 
-2. Install dependencies:
-```bash
-pip install -r requirements.txt
-```
+1. Install Ollama:
 
-3. Set up environment variables:
-```bash
-cp .env.example .env
-# Edit .env with your API keys
-```
+   **For macOS:**
+   ```bash
+   curl -fsSL https://ollama.com/install.sh | sh
+   ```
 
-4. Run the application:
-```bash
-streamlit run src/main.py
-```
+   **For Linux:**
+   ```bash
+   curl -fsSL https://ollama.com/install.sh | sh
+   ```
+
+   **For Windows:**
+   - Download and install from [Ollama's website](https://ollama.com/download)
+
+2. Pull the Llama 3.2 model:
+   ```bash
+   ollama pull llama3.2:3b
+   ```
+
+3. Clone the repository:
+   ```bash
+   git clone https://github.com/yourusername/llama-research-assistant.git
+   cd llama-research-assistant
+   ```
+
+4. Install dependencies:
+   ```bash
+   pip install -r requirements.txt
+   ```
+
+5. Set up environment variables:
+   ```bash
+   cp .env.example .env
+   # Edit .env with your API keys
+   ```
+
+6. Run the application:
+   ```bash
+   streamlit run src/main.py
+   ```
 
 ## 🔧 Configuration
 
-Required environment variables:
+Required configurations:
+- **Ollama**: Must be running locally.
 - `SERPER_API_KEY`: Your Google Serper API key
-
-## 🤝 Contributing
-
-We welcome contributions! Please see our [Contributing Guide](docs/CONTRIBUTING.md) for details.
 
 ## 📝 License
 
