@@ -1,13 +1,15 @@
 import os
 from typing import Tuple, Dict, Any
 import streamlit as st
-from langchain_community.chat_models import ChatOllama
+from langchain_together import ChatTogether
 from langchain_community.utilities import GoogleSerperAPIWrapper
 from langchain_core.output_parsers import JsonOutputParser, StrOutputParser
 from langgraph.graph import END, StateGraph
 from typing_extensions import TypedDict
-from prompt_library import PromptLibrary, PromptType
+from .prompt_library import PromptLibrary, PromptType
 from dotenv import load_dotenv
+import re
+import urllib
 
 class GraphState(TypedDict):
     """Represents the state of our workflow graph."""
@@ -23,27 +25,35 @@ class ResearchAssistant:
         load_dotenv()
         """Initialize the research assistant with necessary components."""
         self.prompt_library = PromptLibrary()
-        self.llm, self.llm_json = self._configure_llm()
+        self.llm = self._configure_llm()
         self.serper = GoogleSerperAPIWrapper(api_key=os.getenv("SERPER_API_KEY"), type="news")
         self.workflow = self._build_workflow()
     
-    def _configure_llm(self) -> Tuple[ChatOllama, ChatOllama]:  
+    def _configure_llm(self) -> Tuple[ChatTogether]:
         """Configure LLM models based on user settings."""
         st.sidebar.header("Configure LLM")
         
         model = st.sidebar.selectbox(
             "Choose the LLM Model",
-            options=["llama3.2:3b"],
+            options=["mistralai/Mistral-7B-Instruct-v0.2", "meta-llama/Llama-2-70b-chat-hf"],
             index=0
         )
         
         temperature = 0.5
         
+        together_api_key = os.getenv("TOGETHER_API_KEY")
+        if not together_api_key:
+            st.error("Together AI API key not found. Please set TOGETHER_API_KEY environment variable.")
+            st.stop()
+            
         return (
-            ChatOllama(model=model, temperature=temperature),
-            ChatOllama(model=model, format='json', temperature=temperature)
+            ChatTogether(
+                model=model,
+                temperature=temperature,
+                together_api_key=together_api_key
+            )
         )
-    
+        
     def _build_workflow(self) -> StateGraph:
         """Build the workflow graph for processing queries."""
         # Initialize chains
@@ -54,12 +64,12 @@ class ResearchAssistant:
         )
         query_chain = (
             self.prompt_library.get_prompt(PromptType.QUERY) | 
-            self.llm_json | 
+            self.llm | 
             JsonOutputParser()
         )
         question_router = (
             self.prompt_library.get_prompt(PromptType.ROUTER) | 
-            self.llm_json | 
+            self.llm | 
             JsonOutputParser()
         )
         
@@ -133,14 +143,47 @@ class ResearchAssistant:
         workflow.add_edge("generate", END)
         
         return workflow.compile()
-    
+
     def process_query(self, query: str) -> str:
-        """Process a user query and return the response."""
+        """Process a user query and return the response in a modern, visually appealing format."""
         try:
             result = self.workflow.invoke({"question": query})
             generation = result.get("generation", "An error occurred while processing your query.")
-            st.markdown(generation, unsafe_allow_html=True)
+            
+            st.markdown("## 📄 Research Results")
+            st.markdown("---")
+            
+            with st.container():
+                lines = generation.split("\n")
+                
+                for line in lines:
+                    if line.strip():
+                        if line.endswith(":"):
+                            st.markdown(f"<h3 style='color: #2E86C1; font-size: 20px; margin-bottom: 10px;'>{line}</h3>", unsafe_allow_html=True)
+                        elif line.strip().startswith("References:"):
+                            with st.expander("**References**", expanded=False):
+                                processed_line = re.sub(
+                                    r'[<>]?(https?://(?:www\.)?[^\s<>]+)[<>]?',
+                                    lambda m: f'<a href="{urllib.parse.quote(m.group(1), safe=":/?=&")}" target="_blank">{urllib.parse.urlparse(m.group(1)).netloc}</a>',
+                                    line
+                                )
+                                st.markdown(processed_line, unsafe_allow_html=True)
+                        else:
+                            processed_line = re.sub(
+                                r'[<>]?(https?://(?:www\.)?[^\s<>]+)[<>]?',
+                                lambda m: f'<a href="{urllib.parse.quote(m.group(1), safe=":/?=&")}" target="_blank">{urllib.parse.urlparse(m.group(1)).netloc}</a>',
+                                line
+                            )
+                            st.markdown(
+                                f"<div style='font-size: 16px; line-height: 1.6; color: #333333; margin-bottom: 10px;'>{processed_line}</div>",
+                                unsafe_allow_html=True
+                            )
+            st.markdown("---")
+            st.markdown("✨ **Need more insights?** Ask another question!")
+            
             return ""
         except Exception as e:
             st.error(f"Error processing query: {str(e)}")
             return "An error occurred while processing your query."
+
+
